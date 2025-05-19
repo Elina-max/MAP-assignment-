@@ -4,8 +4,8 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const supabaseUrl = 'https://ydfdjhbxaoqzhangllsx.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkZmRqaGJ4YW9xemhhbmdsbHN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY5OTA5NTMsImV4cCI6MjA2MjU2Njk1M30.XmgG9DfmCu6ijhmUkSNC4GGQgzNn12lTMylO7Z_cwaQ';
+const supabaseUrl = 'https://oytaudiybcuxliiyyljw.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95dGF1ZGl5YmN1eGxpaXl5bGp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDczMjU4NjIsImV4cCI6MjA2MjkwMTg2Mn0.fMiI9flvoYtU9ihtcMAJowSanM0W9Zqo_LpL_MuoOww';
 
 // Define database types
 export interface Team {
