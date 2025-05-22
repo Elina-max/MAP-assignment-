@@ -29,6 +29,7 @@ interface ChatMessage {
   id: string;
   sender_id: string;
   sender_name: string;
+  sender_email: string; // Added email for better identification
   message: string;
   is_admin: boolean;
   created_at: string;
@@ -42,12 +43,43 @@ export default function ChatScreen() {
   // Get the current user from AuthContext
   const { user } = useAuth();
   
-  // Create a chat user object from the authenticated user
-  const [currentUser] = useState({
-    id: user?.id || 'anonymous',
-    name: user?.email?.split('@')[0] || 'Anonymous User', // Use email username as display name if no name is set
-    is_admin: user?.role === 'admin' || false
+  // Create a chat user object that updates when auth changes
+  const [currentUser, setCurrentUser] = useState({
+    id: 'anonymous',
+    name: 'Anonymous User',
+    email: '',
+    is_admin: false
   });
+  
+  // Update current user whenever the auth user changes
+  useEffect(() => {
+    console.log('Auth user changed:', user?.email || 'No user');
+    if (user) {
+      const newUser = {
+        id: user.id,
+        name: user.email.split('@')[0], // Username part of email
+        email: user.email,
+        is_admin: user.role === 'admin' || false
+      };
+      console.log('Setting current user to:', newUser.email);
+      setCurrentUser(newUser);
+    } else {
+      // Reset to anonymous if logged out
+      console.log('Setting current user to anonymous');
+      setCurrentUser({
+        id: 'anonymous',
+        name: 'Anonymous User',
+        email: '',
+        is_admin: false
+      });
+    }
+  }, [user]);
+  
+  // Reset messages when user changes to avoid showing previous user's messages as current user
+  useEffect(() => {
+    console.log('Current user changed, refreshing messages');
+    fetchMessages(true);
+  }, [currentUser.id]);
   const colorScheme = useColorScheme();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messageText, setMessageText] = useState('');
@@ -119,6 +151,7 @@ export default function ChatScreen() {
             id: '1',
             sender_id: 'admin1',
             sender_name: 'Admin',
+            sender_email: 'admin@namibiahockey.com',
             message: 'Welcome to the Global Hockey Chat! All messages are visible to everyone.',
             is_admin: true,
             created_at: new Date(Date.now() - 3600000).toISOString(),
@@ -128,6 +161,7 @@ export default function ChatScreen() {
             id: '2',
             sender_id: 'coach456',
             sender_name: 'Coach Johnson',
+            sender_email: 'coach.johnson@namibiahockey.com',
             message: 'Hi everyone! Use this chat to communicate with the whole team.',
             is_admin: false,
             created_at: new Date(Date.now() - 3000000).toISOString(),
@@ -160,6 +194,7 @@ export default function ChatScreen() {
       id: Date.now().toString(),
       sender_id: currentUser.id,
       sender_name: currentUser.name,
+      sender_email: currentUser.email, // Include email in the message
       message: messageText.trim(),
       is_admin: currentUser.is_admin,
       created_at: new Date().toISOString(),
@@ -180,7 +215,7 @@ export default function ChatScreen() {
       
       // Set the last message for notifications to other users
       setLastMessage({
-        sender: currentUser.name,
+        sender: `${currentUser.name} (${currentUser.email})`,
         message: newMessage.message
       });
       
@@ -233,6 +268,9 @@ export default function ChatScreen() {
         ]}>
           <ThemedText style={[styles.senderName, isCurrentUser ? styles.currentUserName : null]}>
             {item.sender_name} {item.is_admin && '(Admin)'}
+          </ThemedText>
+          <ThemedText style={[styles.senderEmail, isCurrentUser ? styles.currentUserEmail : null]}>
+            {item.sender_email}
           </ThemedText>
           <ThemedText style={[
             styles.messageText,
@@ -401,8 +439,17 @@ const styles = StyleSheet.create({
   },
   senderName: {
     fontWeight: 'bold',
-    fontSize: 12,
-    marginBottom: 4,
+    fontSize: 14,
+    marginBottom: 1,
+  },
+  senderEmail: {
+    fontSize: 11,
+    marginBottom: 3,
+    opacity: 0.8,
+  },
+  currentUserEmail: {
+    textAlign: 'right',
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   messageText: {
     fontSize: 16,

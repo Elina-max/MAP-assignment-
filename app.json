@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Namibia Hockey",
-    "slug": "namibia-hockey",
+    "slug": "namibia-hockey-union-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/image.png",
@@ -42,9 +42,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "ed0a7c02-5c62-4905-8666-958a28017b96"
+        "projectId": "d5ee4b84-b667-4f9f-8ba1-79064f4dea08"
       }
     },
-    "owner": "boy1"
+    "owner": "lengalela"
   }
 }

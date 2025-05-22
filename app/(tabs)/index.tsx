@@ -117,11 +117,23 @@ export default function HomeScreen() {
   const [scoreAnimation] = useState(new Animated.Value(1));
   const [showChatNotification, setShowChatNotification] = useState(false);
   const [chatNotification, setChatNotification] = useState({ sender: '', message: '' });
-  const { incrementUnreadCount } = useChatContext();
+  const { incrementUnreadCount, lastMessage } = useChatContext();
 
   // We've removed the auto message notification as requested
   // Users will only see real messages
   
+  // Display notifications when new messages are received in the global chat
+  useEffect(() => {
+    if (lastMessage && lastMessage.sender && lastMessage.message) {
+      setChatNotification({
+        sender: lastMessage.sender,
+        message: lastMessage.message
+      });
+      setShowChatNotification(true);
+      incrementUnreadCount();
+    }
+  }, [lastMessage, incrementUnreadCount]);
+
   // Simulate live score updates with animation
   useEffect(() => {
     const interval = setInterval(() => {
@@ -183,7 +195,7 @@ export default function HomeScreen() {
         onPress={() => router.push('/chat')}
       >
         <IconSymbol name="bubble.left.fill" size={20} color="white" />
-        <Text style={styles.chatButtonText}>Open Chat</Text>
+        <Text style={styles.chatButtonText}>Open Global Chat</Text>
       </TouchableOpacity>
 
       {showNotifications && (
