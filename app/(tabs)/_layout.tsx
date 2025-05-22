@@ -1,17 +1,20 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import ChatBadge from '@/components/ChatBadge';
+import { ChatProvider } from '@/contexts/ChatContext';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
+    <ChatProvider>
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
@@ -55,12 +58,18 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="chat"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.crop.circle" color={color} />,
+          title: 'Chat',
+          tabBarIcon: ({ color }) => (
+            <View>
+              <IconSymbol size={28} name="bubble.left.fill" color={color} />
+              <ChatBadge />
+            </View>
+          ),
         }}
       />
     </Tabs>
+    </ChatProvider>
   );
 }

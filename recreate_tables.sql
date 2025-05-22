@@ -38,10 +38,25 @@ CREATE TABLE events (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create chat messages table
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  sender_id UUID NOT NULL,
+  sender_name TEXT NOT NULL,
+  message TEXT NOT NULL,
+  is_admin BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  read_by_ids UUID[] DEFAULT '{}'::UUID[]
+);
+
+-- Create index for faster queries
+CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at);
+
 -- Enable Row Level Security on all tables
 ALTER TABLE teams ENABLE ROW LEVEL SECURITY;
 ALTER TABLE players ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for teams table that allow anonymous access
 CREATE POLICY "Allow public read access for teams" ON teams FOR SELECT USING (true);

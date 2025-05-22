@@ -1,17 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView, TextInput, TouchableOpacity, Image, Animated } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { Colors } from '@/constants/Colors';
-import { IconSymbol } from '@/components/ui/IconSymbol';
 import AppHeader from '@/components/AppHeader';
+import ChatNotification from '@/components/ChatNotification';
+import { IconSymbol } from '@/components/ui/IconSymbol';
+import { Colors } from '@/constants/Colors';
+import { useChatContext } from '@/contexts/ChatContext';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { Image as ExpoImage } from 'expo-image';
-import { Platform } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
+import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import React, { useEffect, useState } from 'react';
+import { Animated, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Mock data for live matches
 const liveMatches = [
@@ -117,7 +115,13 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [scoreAnimation] = useState(new Animated.Value(1));
+  const [showChatNotification, setShowChatNotification] = useState(false);
+  const [chatNotification, setChatNotification] = useState({ sender: '', message: '' });
+  const { incrementUnreadCount } = useChatContext();
 
+  // We've removed the auto message notification as requested
+  // Users will only see real messages
+  
   // Simulate live score updates with animation
   useEffect(() => {
     const interval = setInterval(() => {
@@ -151,6 +155,14 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      
+      {showChatNotification && (
+        <ChatNotification
+          sender={chatNotification.sender}
+          message={chatNotification.message}
+          onDismiss={() => setShowChatNotification(false)}
+        />
+      )}
 
       <View style={styles.header}>
         <AppHeader 
@@ -158,15 +170,21 @@ export default function HomeScreen() {
           subtitle="Stay updated with the latest matches" 
         />
         
-        <TouchableOpacity onPress={() => setShowNotifications(!showNotifications)}>
-          <View style={styles.notificationIcon}>
-            <IconSymbol size={24} name="bell.fill" color={Colors[colorScheme ?? 'light'].text} />
-            <View style={styles.notificationBadge}>
-              <Text style={styles.notificationBadgeText}>{notifications.length}</Text>
-            </View>
+        <TouchableOpacity onPress={() => router.push('/profile')}>
+          <View style={styles.profileIcon}>
+            <IconSymbol size={24} name="person.crop.circle" color={Colors[colorScheme ?? 'light'].text} />
           </View>
         </TouchableOpacity>
+
       </View>
+      
+      <TouchableOpacity 
+        style={[styles.chatButton, { backgroundColor: Colors[colorScheme ?? 'light'].tint }]}
+        onPress={() => router.push('/chat')}
+      >
+        <IconSymbol name="bubble.left.fill" size={20} color="white" />
+        <Text style={styles.chatButtonText}>Open Chat</Text>
+      </TouchableOpacity>
 
       {showNotifications && (
         <View style={[styles.notificationsContainer, { 
@@ -373,24 +391,28 @@ const styles = StyleSheet.create({
   },
   notificationIcon: {
     position: 'absolute',
-    right: 16,
-    top: 16,
+    right: 0,
+    top: 0,
     zIndex: 10,
+  },
+  profileIcon: {
+    padding: 1,
+    marginRight: 5,
   },
   notificationBadge: {
     position: 'absolute',
-    right: -5,
-    top: -5,
-    backgroundColor: '#FF3B30',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
+    top: -4,
+    right: -4,
+    backgroundColor: '#CC0000',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     justifyContent: 'center',
     alignItems: 'center',
   },
   notificationBadgeText: {
     color: 'white',
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: 'bold',
   },
   title: {
@@ -636,5 +658,24 @@ const styles = StyleSheet.create({
   },
   highlightDate: {
     fontSize: 12,
+  },
+  chatButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginHorizontal: 16,
+    marginVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  chatButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
 });

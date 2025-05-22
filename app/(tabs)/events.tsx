@@ -69,12 +69,17 @@ export default function EventsScreen() {
   const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
   const [currentDateField, setCurrentDateField] = useState<'date' | 'deadline'>('date');
   
+  // Calculate a default registration deadline (7 days before event date)
+  const defaultEventDate = new Date();
+  const defaultDeadlineDate = new Date();
+  defaultDeadlineDate.setDate(defaultEventDate.getDate() - 7);
+  
   const [newEvent, setNewEvent] = useState({
     title: '',
-    date: new Date().toISOString().split('T')[0],
+    date: defaultEventDate.toISOString().split('T')[0],
     location: '',
     description: '',
-    registration_deadline: new Date().toISOString().split('T')[0],
+    registration_deadline: defaultDeadlineDate.toISOString().split('T')[0],
     time: '12:00',
     teams: [] as string[],
     type: 'match',
@@ -123,6 +128,12 @@ export default function EventsScreen() {
       return;
     }
 
+    // Validate that the registration deadline is before the event date
+    if (isDeadlineAfterEventDate(newEvent.registration_deadline, newEvent.date)) {
+      Alert.alert('Invalid Date', 'Registration deadline must be before the event date');
+      return;
+    }
+
     setLoading(true);
     try {
       // Create event in Supabase
@@ -146,12 +157,17 @@ export default function EventsScreen() {
       if (createdEvent) {
         // Update local state
         setEvents([...events, createdEvent]);
+        // Reset form state with proper deadline calculation
+        const resetEventDate = new Date();
+        const resetDeadlineDate = new Date();
+        resetDeadlineDate.setDate(resetEventDate.getDate() - 7);
+        
         setNewEvent({
           title: '',
-          date: new Date().toISOString().split('T')[0],
+          date: resetEventDate.toISOString().split('T')[0],
           location: '',
           description: '',
-          registration_deadline: new Date().toISOString().split('T')[0],
+          registration_deadline: resetDeadlineDate.toISOString().split('T')[0],
           time: '12:00',
           teams: [],
           type: 'match',
@@ -173,6 +189,41 @@ export default function EventsScreen() {
   const handleRegisterForEvent = async (event: Event) => {
     setSelectedEvent(event);
     setShowTeamSelection(true);
+  };
+  
+  // Handle event deletion
+  const handleDeleteEvent = async (eventId: string) => {
+    Alert.alert(
+      'Delete Event',
+      'Are you sure you want to delete this event? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const success = await eventService.deleteEvent(eventId);
+              
+              if (success) {
+                // Update local state by removing the deleted event
+                setEvents(events.filter(e => e.id !== eventId));
+                setShowEventDetailsModal(false);
+                Alert.alert('Success', 'Event has been deleted successfully!');
+              } else {
+                Alert.alert('Error', 'Failed to delete event. Please try again.');
+              }
+            } catch (error) {
+              console.error('Error deleting event:', error);
+              Alert.alert('Error', 'An unexpected error occurred while deleting the event.');
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
   };
   
   const submitTeamRegistration = async () => {
@@ -246,13 +297,38 @@ export default function EventsScreen() {
       const dateString = selectedDate.toISOString().split('T')[0];
       
       if (currentDateField === 'date') {
-        setNewEvent({ ...newEvent, date: dateString });
+        // When event date changes, update the deadline to be 7 days before the event date
+        // only if the deadline hasn't been manually set (is still the default)
+        const newDate = new Date(selectedDate);
+        const deadlineDate = new Date(newDate);
+        deadlineDate.setDate(newDate.getDate() - 7);
+        const deadlineDateString = deadlineDate.toISOString().split('T')[0];
+        
+        setNewEvent({ 
+          ...newEvent, 
+          date: dateString,
+          // Only update the deadline if it's the default or if it's after the event date
+          registration_deadline: isDeadlineAfterEventDate(newEvent.registration_deadline, dateString) ? 
+            deadlineDateString : newEvent.registration_deadline
+        });
       } else {
+        // Make sure the deadline is not after the event date
+        if (isDeadlineAfterEventDate(dateString, newEvent.date)) {
+          Alert.alert('Invalid Date', 'Registration deadline must be before the event date');
+          return;
+        }
         setNewEvent({ ...newEvent, registration_deadline: dateString });
       }
     }
   };
-  
+
+  // Helper function to check if deadline is after event date
+  const isDeadlineAfterEventDate = (deadline: string, eventDate: string): boolean => {
+    const deadlineDate = new Date(deadline);
+    const eventDateTime = new Date(eventDate);
+    return deadlineDate >= eventDateTime;
+  };
+
   // Event details modal
   const EventDetailsModal = () => {
     if (!selectedEvent) return null;
@@ -324,12 +400,21 @@ export default function EventsScreen() {
               <Text style={styles.registerButtonText}>Register Team</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity 
-              style={[styles.closeModalButton, { backgroundColor: Colors[colorScheme ?? 'light'].tint, marginTop: 8 }]}
-              onPress={() => setShowEventDetailsModal(false)}
-            >
-              <Text style={styles.closeModalButtonText}>Close</Text>
-            </TouchableOpacity>
+            <View style={styles.actionButtons}>
+              <TouchableOpacity 
+                style={[styles.closeModalButton, { backgroundColor: Colors[colorScheme ?? 'light'].tint, marginTop: 8, flex: 1, marginRight: 8 }]}
+                onPress={() => setShowEventDetailsModal(false)}
+              >
+                <Text style={styles.closeModalButtonText}>Close</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.deleteButton, { backgroundColor: '#f44336', marginTop: 8, flex: 1 }]}
+                onPress={() => handleDeleteEvent(selectedEvent.id)}
+              >
+                <Text style={styles.deleteButtonText}>Delete Event</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -960,5 +1045,16 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  deleteButton: {
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

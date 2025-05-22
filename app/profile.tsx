@@ -6,20 +6,19 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState } from 'react';
 import { Image, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Default user data structure
-const defaultUserProfile = {
-  id: '',
-  name: '',
-  email: '',
-  role: 'User',
-  team: '',
-  avatar: 'https://randomuser.me/api/portraits/lego/1.jpg', // Default avatar
-  phone: '',
+// Mock user data
+const mockUser = {
+  id: '123',
+  name: 'Coach Smith',
+  email: 'coach.smith@namibiahockey.com',
+  role: 'Coach',
+  team: 'Windhoek Warriors',
+  avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
+  phone: '+264 81 123 4567',
   notifications: {
     matches: true,
     teamUpdates: true,
@@ -30,36 +29,12 @@ const defaultUserProfile = {
 
 export default function ProfileScreen() {
   const colorScheme = useColorScheme();
-  const { user: authUser } = useAuth();
-  const [user, setUser] = useState(defaultUserProfile);
+  const [user, setUser] = useState(mockUser);
   const [editing, setEditing] = useState(false);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [notifications, setNotifications] = useState(defaultUserProfile.notifications);
-  
-  // Update the profile with authenticated user data when available
-  useEffect(() => {
-    if (authUser) {
-      // Create a profile from the authenticated user
-      const userProfile = {
-        ...defaultUserProfile,
-        id: authUser.id,
-        email: authUser.email,
-        name: authUser.name || authUser.email.split('@')[0], // Use email username if no name set
-        role: authUser.role || 'User',
-        team: authUser.team || '',
-        phone: authUser.phone || '',
-        // Keep other defaults if not available in auth user
-      };
-      
-      setUser(userProfile);
-      setName(userProfile.name);
-      setEmail(userProfile.email);
-      setPhone(userProfile.phone);
-      setNotifications(userProfile.notifications);
-    }
-  }, [authUser]);
+  const [name, setName] = useState(user.name);
+  const [email, setEmail] = useState(user.email);
+  const [phone, setPhone] = useState(user.phone);
+  const [notifications, setNotifications] = useState(user.notifications);
 
   const handleSave = () => {
     setUser({
