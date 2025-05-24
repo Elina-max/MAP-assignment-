@@ -347,7 +347,7 @@ export default function PlayersScreen() {
           >
             <View style={styles.playerHeader}>
               <Image 
-                source={{ uri: `https://randomuser.me/api/portraits/${Math.random() > 0.5 ? 'men' : 'women'}/${parseInt(player.id) % 99}.jpg` }} 
+                source={{ uri: `https://randomuser.me/api/?nat=gb&gender=${Math.random() > 0.5 ? 'men' : 'women'}/${parseInt(player.id) % 99}.jpg` }} 
                 style={styles.playerImage} 
               />
               <View style={styles.playerInfo}>
