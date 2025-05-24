@@ -72,7 +72,7 @@ export const ChatNotification: React.FC<ChatNotificationProps> = ({
     >
       <TouchableOpacity style={styles.content} onPress={handlePress}>
         <View style={styles.iconContainer}>
-          <IconSymbol name="bubble.left.fill" size={24} color={Colors[colorScheme].tint} />
+          <IconSymbol name="questionmark.circle.fill" size={24} color={Colors[colorScheme].tint} />
         </View>
         <View style={styles.textContainer}>
           <Text style={[styles.sender, { color: Colors[colorScheme].text }]}>

@@ -11,7 +11,8 @@ import {
   ActivityIndicator,
   RefreshControl,
   Keyboard,
-  Dimensions
+  Dimensions,
+  ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,22 +24,19 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { HockeyAnswers, SuggestedQuestions, findHockeyAnswer } from '@/constants/HockeyHelp';
 
 // Define the ChatMessage interface
 interface ChatMessage {
   id: string;
   sender_id: string;
   sender_name: string;
-  sender_email: string; // Added email for better identification
   message: string;
-  is_admin: boolean;
+  is_bot: boolean;
   created_at: string;
-  read_by_ids: string[];
 }
 
-// User data should come from the AuthContext
-
-// Global Chat Screen - All users can see all messages
+// Help Chat Screen - Hockey Q&A Chatbot
 export default function ChatScreen() {
   // Get the current user from AuthContext
   const { user } = useAuth();
@@ -47,46 +45,35 @@ export default function ChatScreen() {
   const [currentUser, setCurrentUser] = useState({
     id: 'anonymous',
     name: 'Anonymous User',
-    email: '',
     is_admin: false
   });
   
   // Update current user whenever the auth user changes
   useEffect(() => {
-    console.log('Auth user changed:', user?.email || 'No user');
     if (user) {
       const newUser = {
         id: user.id,
         name: user.email.split('@')[0], // Username part of email
-        email: user.email,
         is_admin: user.role === 'admin' || false
       };
-      console.log('Setting current user to:', newUser.email);
       setCurrentUser(newUser);
     } else {
       // Reset to anonymous if logged out
-      console.log('Setting current user to anonymous');
       setCurrentUser({
         id: 'anonymous',
         name: 'Anonymous User',
-        email: '',
         is_admin: false
       });
     }
   }, [user]);
   
-  // Reset messages when user changes to avoid showing previous user's messages as current user
-  useEffect(() => {
-    console.log('Current user changed, refreshing messages');
-    fetchMessages(true);
-  }, [currentUser.id]);
   const colorScheme = useColorScheme();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const flatListRef = useRef<FlatList>(null);
-  const { resetUnreadCount, setLastMessage } = useChatContext();
+  const { resetUnreadCount } = useChatContext();
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const windowHeight = Dimensions.get('window').height;
@@ -114,73 +101,49 @@ export default function ChatScreen() {
     };
   }, []);
 
-  // Fetch messages on component mount
+  // Initialize chat with welcome message
   useEffect(() => {
-    fetchMessages();
+    initializeChat();
     
     // Reset unread count when chat screen is opened
     resetUnreadCount();
-    
-    // Set up a timer to periodically check for new messages
-    const intervalId = setInterval(() => {
-      fetchMessages(false);
-    }, 10000); // Check every 10 seconds
-    
-    return () => clearInterval(intervalId);
   }, [resetUnreadCount]);
 
-  const fetchMessages = async (showLoading = true) => {
-    if (showLoading) {
-      setLoading(true);
-    }
+  const initializeChat = async () => {
+    setLoading(true);
     
     try {
-      // In a real implementation, this would use the chatService
-      // const fetchedMessages = await chatService.getMessages();
-      
-      // For now, we'll use mock data or local storage
-      const storedMessagesJson = await AsyncStorage.getItem('local_chat_messages');
-      let fetchedMessages: ChatMessage[] = [];
+      // Check if there are saved messages
+      const storedMessagesJson = await AsyncStorage.getItem('hockey_help_messages');
+      let initialMessages: ChatMessage[] = [];
       
       if (storedMessagesJson) {
-        fetchedMessages = JSON.parse(storedMessagesJson);
+        initialMessages = JSON.parse(storedMessagesJson);
       } else {
-        // Sample mock data if no messages exist
-        fetchedMessages = [
+        // Welcome message
+        initialMessages = [
           {
             id: '1',
-            sender_id: 'admin1',
-            sender_name: 'Admin',
-            sender_email: 'admin@namibiahockey.com',
-            message: 'Welcome to the Global Hockey Chat! All messages are visible to everyone.',
-            is_admin: true,
-            created_at: new Date(Date.now() - 3600000).toISOString(),
-            read_by_ids: [currentUser.id]
-          },
-          {
-            id: '2',
-            sender_id: 'coach456',
-            sender_name: 'Coach Johnson',
-            sender_email: 'coach.johnson@namibiahockey.com',
-            message: 'Hi everyone! Use this chat to communicate with the whole team.',
-            is_admin: false,
-            created_at: new Date(Date.now() - 3000000).toISOString(),
-            read_by_ids: [currentUser.id]
+            sender_id: 'bot',
+            sender_name: 'Hockey Helper',
+            message: 'Welcome to the Hockey Help Chat! Ask me any questions about hockey and I\'ll try to help you. You can also check out some suggested questions below.',
+            is_bot: true,
+            created_at: new Date().toISOString()
           }
         ];
         
-        // Store the mock data
-        await AsyncStorage.setItem('local_chat_messages', JSON.stringify(fetchedMessages));
+        // Store the initial messages
+        await AsyncStorage.setItem('hockey_help_messages', JSON.stringify(initialMessages));
       }
       
       // Sort messages by date
-      fetchedMessages.sort((a, b) => 
+      initialMessages.sort((a, b) => 
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
       
-      setMessages(fetchedMessages);
+      setMessages(initialMessages);
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      console.error('Error initializing chat:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -190,42 +153,88 @@ export default function ChatScreen() {
   const handleSendMessage = async () => {
     if (!messageText.trim()) return;
     
-    const newMessage: ChatMessage = {
-      id: Date.now().toString(),
+    const userMessage: ChatMessage = {
+      id: `user-${Date.now()}`,
       sender_id: currentUser.id,
       sender_name: currentUser.name,
-      sender_email: currentUser.email, // Include email in the message
       message: messageText.trim(),
-      is_admin: currentUser.is_admin,
-      created_at: new Date().toISOString(),
-      read_by_ids: [currentUser.id]
+      is_bot: false,
+      created_at: new Date().toISOString()
     };
     
+    // Clear input field immediately for better UX
+    setMessageText('');
+    
+    // Update messages with user message
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
+    
     try {
-      // In a real implementation, this would use the chatService
-      // await chatService.sendMessage(newMessage);
-      
-      // For now, we'll just update local storage
-      const updatedMessages = [...messages, newMessage];
-      await AsyncStorage.setItem('local_chat_messages', JSON.stringify(updatedMessages));
-      
-      // Update state
-      setMessages(updatedMessages);
-      setMessageText('');
-      
-      // Set the last message for notifications to other users
-      setLastMessage({
-        sender: `${currentUser.name} (${currentUser.email})`,
-        message: newMessage.message
-      });
+      // Get bot response
+      setTimeout(() => {
+        generateBotResponse(userMessage.message);
+      }, 500);
       
       // Scroll to the bottom
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('Error processing message:', error);
     }
+  };
+
+  const generateBotResponse = async (userQuery: string) => {
+    // Try to find a matching answer
+    const answer = findHockeyAnswer(userQuery);
+    
+    let botResponse: ChatMessage;
+    
+    if (answer) {
+      // We found a matching answer
+      botResponse = {
+        id: `bot-${Date.now()}`,
+        sender_id: 'bot',
+        sender_name: 'Hockey Helper',
+        message: answer.answer,
+        is_bot: true,
+        created_at: new Date().toISOString()
+      };
+    } else {
+      // No matching answer found
+      botResponse = {
+        id: `bot-${Date.now()}`,
+        sender_id: 'bot',
+        sender_name: 'Hockey Helper',
+        message: "I'm sorry, I don't have information about that specific hockey question. Please try rephrasing or ask me about rules, equipment, positions, or local hockey in Namibia.",
+        is_bot: true,
+        created_at: new Date().toISOString()
+      };
+    }
+    
+    // Add bot response to messages - use a callback to ensure we're working with the latest state
+    setMessages(currentMessages => {
+      const updatedMessages = [...currentMessages, botResponse];
+      
+      // Store the updated messages
+      AsyncStorage.setItem('hockey_help_messages', JSON.stringify(updatedMessages))
+        .catch(error => console.error('Error saving messages:', error));
+      
+      return updatedMessages;
+    });
+    
+    // Scroll to the bottom
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
+
+  const handleSuggestedQuestionPress = (question: string) => {
+    setMessageText(question);
+    // Optional: Auto-send the question
+    // setTimeout(() => {
+    //   handleSendMessage();
+    // }, 100);
   };
 
   const formatTime = (dateString: string) => {
@@ -249,38 +258,34 @@ export default function ChatScreen() {
   };
 
   const renderMessage = ({ item }: { item: ChatMessage }) => {
-    const isCurrentUser = item.sender_id === currentUser.id;
+    const isCurrentUser = !item.is_bot;
     
     return (
       <View style={[
         styles.messageContainer,
-        isCurrentUser ? styles.currentUserMessage : styles.otherUserMessage
+        isCurrentUser ? styles.currentUserMessage : styles.botMessage
       ]}>
         <View style={[
           styles.messageBubble,
-          isCurrentUser ? styles.currentUserBubble : styles.otherUserBubble,
-          { backgroundColor: isCurrentUser 
-            ? Colors[colorScheme ?? 'light'].tint 
-            : item.is_admin 
-              ? Colors[colorScheme ?? 'light'].adminBubble 
-              : Colors[colorScheme ?? 'light'].otherBubble 
+          isCurrentUser ? styles.currentUserBubble : styles.botBubble,
+          { 
+            backgroundColor: isCurrentUser 
+              ? Colors[colorScheme ?? 'light'].tint 
+              : Colors[colorScheme ?? 'light'].adminBubble 
           }
         ]}>
           <ThemedText style={[styles.senderName, isCurrentUser ? styles.currentUserName : null]}>
-            {item.sender_name} {item.is_admin && '(Admin)'}
-          </ThemedText>
-          <ThemedText style={[styles.senderEmail, isCurrentUser ? styles.currentUserEmail : null]}>
-            {item.sender_email}
+            {item.sender_name}
           </ThemedText>
           <ThemedText style={[
             styles.messageText,
-            isCurrentUser ? styles.currentUserText : styles.otherUserText
+            isCurrentUser ? styles.currentUserText : styles.botText
           ]}>
             {item.message}
           </ThemedText>
           <Text style={[
             styles.messageTime,
-            isCurrentUser ? styles.currentUserTime : styles.otherUserTime
+            isCurrentUser ? styles.currentUserTime : styles.botTime
           ]}>
             {formatTime(item.created_at)}
           </Text>
@@ -310,8 +315,37 @@ export default function ChatScreen() {
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchMessages(false);
+    initializeChat();
   };
+
+  const renderSuggestedQuestions = () => (
+    <ScrollView 
+      horizontal 
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.suggestedQuestionsContainer}
+    >
+      {SuggestedQuestions.map((question, index) => (
+        <TouchableOpacity 
+          key={index} 
+          style={[
+            styles.suggestedQuestion,
+            { backgroundColor: Colors[colorScheme ?? 'light'].cardLight }
+          ]}
+          onPress={() => handleSuggestedQuestionPress(question)}
+        >
+          <Text 
+            style={[
+              styles.suggestedQuestionText,
+              { color: Colors[colorScheme ?? 'light'].text }
+            ]}
+            numberOfLines={2}
+          >
+            {question}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
 
   // Calculate the bottom padding to ensure the input is above the tab bar
   const tabBarHeight = 49; // Standard tab bar height
@@ -320,7 +354,7 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <AppHeader title="Global Team Chat" />
+      <AppHeader title="Hockey Help" />
       
       <KeyboardAvoidingView 
         style={styles.keyboardAvoidingView}
@@ -330,7 +364,7 @@ export default function ChatScreen() {
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].tint} />
-            <ThemedText style={styles.loadingText}>Loading messages...</ThemedText>
+            <ThemedText style={styles.loadingText}>Loading help chat...</ThemedText>
           </View>
         ) : (
           <FlatList
@@ -340,7 +374,7 @@ export default function ChatScreen() {
             keyExtractor={(item, index) => item.id ?? `${index}`}
             style={styles.messagesList}
             contentContainerStyle={[styles.messagesListContent, 
-              { paddingBottom: keyboardVisible ? keyboardHeight : safeAreaBottom + 60 }
+              { paddingBottom: keyboardVisible ? keyboardHeight : safeAreaBottom + 120 }
             ]}
             refreshControl={
               <RefreshControl
@@ -350,13 +384,16 @@ export default function ChatScreen() {
                 tintColor={Colors[colorScheme ?? 'light'].tint}
               />
             }
+            ListHeaderComponent={renderSuggestedQuestions}
             onContentSizeChange={() => {
-              if (!keyboardVisible) {
-                flatListRef.current?.scrollToEnd({ animated: true });
+              if (messages.length > 1) {
+                flatListRef.current?.scrollToEnd({ animated: false });
               }
             }}
             onLayout={() => {
-              flatListRef.current?.scrollToEnd({ animated: true });
+              if (messages.length > 1) {
+                flatListRef.current?.scrollToEnd({ animated: false });
+              }
             }}
           />
         )}
@@ -371,7 +408,7 @@ export default function ChatScreen() {
                 borderColor: Colors[colorScheme ?? 'light'].border
               }
             ]}
-            placeholder="Type a message to the team..."
+            placeholder="Ask a question about hockey..."
             placeholderTextColor={Colors[colorScheme ?? 'light'].placeholderText}
             value={messageText}
             onChangeText={setMessageText}
@@ -424,7 +461,7 @@ const styles = StyleSheet.create({
   currentUserMessage: {
     justifyContent: 'flex-end',
   },
-  otherUserMessage: {
+  botMessage: {
     justifyContent: 'flex-start',
   },
   messageBubble: {
@@ -436,22 +473,13 @@ const styles = StyleSheet.create({
   currentUserBubble: {
     borderBottomRightRadius: 4,
   },
-  otherUserBubble: {
+  botBubble: {
     borderBottomLeftRadius: 4,
   },
   senderName: {
     fontWeight: 'bold',
     fontSize: 14,
-    marginBottom: 1,
-  },
-  senderEmail: {
-    fontSize: 11,
-    marginBottom: 3,
-    opacity: 0.8,
-  },
-  currentUserEmail: {
-    textAlign: 'right',
-    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 2,
   },
   messageText: {
     fontSize: 16,
@@ -460,7 +488,7 @@ const styles = StyleSheet.create({
   currentUserText: {
     color: 'white',
   },
-  otherUserText: {
+  botText: {
     color: 'white',
   },
   messageTime: {
@@ -471,7 +499,7 @@ const styles = StyleSheet.create({
   currentUserTime: {
     color: 'rgba(255, 255, 255, 0.7)',
   },
-  otherUserTime: {
+  botTime: {
     color: 'rgba(255, 255, 255, 0.7)',
   },
   currentUserName: {
@@ -501,80 +529,38 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    zIndex: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 5,
   },
   input: {
     flex: 1,
+    minHeight: 40,
+    maxHeight: 120,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    maxHeight: 100,
     borderWidth: 1,
+    fontSize: 16,
   },
   sendButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginLeft: 8,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  // Username dialog styles
-  usernameDialogContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
+  suggestedQuestionsContainer: {
+    paddingVertical: 12,
+    paddingHorizontal: 4,
   },
-  usernameDialog: {
-    width: '80%',
-    borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+  suggestedQuestion: {
+    padding: 12,
+    borderRadius: 16,
+    marginRight: 8,
+    minWidth: 150,
+    maxWidth: 200,
   },
-  usernameDialogTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  usernameDialogSubtitle: {
+  suggestedQuestionText: {
     fontSize: 14,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  usernameInput: {
-    width: '100%',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 20,
-    fontSize: 16,
-  },
-  usernameButton: {
-    width: '100%',
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-  },
-  usernameButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '500',
   },
 });

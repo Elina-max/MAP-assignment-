@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Define the context type for global chat
+// Define the context type for hockey help chat
 interface ChatContextType {
   unreadCount: number;
   setUnreadCount: (count: number) => void;
@@ -33,12 +33,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const loadUnreadCount = async () => {
       try {
-        const storedCount = await AsyncStorage.getItem('unread_chat_count');
+        const storedCount = await AsyncStorage.getItem('unread_help_count');
         if (storedCount !== null) {
           setUnreadCount(parseInt(storedCount, 10));
         }
       } catch (error) {
-        console.error('Error loading unread chat count:', error);
+        console.error('Error loading unread help count:', error);
       }
     };
 
@@ -49,9 +49,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const saveUnreadCount = async () => {
       try {
-        await AsyncStorage.setItem('unread_chat_count', unreadCount.toString());
+        await AsyncStorage.setItem('unread_help_count', unreadCount.toString());
       } catch (error) {
-        console.error('Error saving unread chat count:', error);
+        console.error('Error saving unread help count:', error);
       }
     };
 

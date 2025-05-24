@@ -194,8 +194,8 @@ export default function HomeScreen() {
         style={[styles.chatButton, { backgroundColor: Colors[colorScheme ?? 'light'].tint }]}
         onPress={() => router.push('/chat')}
       >
-        <IconSymbol name="bubble.left.fill" size={20} color="white" />
-        <Text style={styles.chatButtonText}>Open Global Chat</Text>
+        <IconSymbol name="questionmark.circle.fill" size={20} color="white" />
+        <Text style={styles.chatButtonText}>Need help?</Text>
       </TouchableOpacity>
 
       {showNotifications && (

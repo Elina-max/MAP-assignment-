@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useChatContext } from '@/contexts/ChatContext';
+import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 interface ChatBadgeProps {
   size?: number;
@@ -8,6 +10,7 @@ interface ChatBadgeProps {
 
 export const ChatBadge: React.FC<ChatBadgeProps> = ({ size = 18 }) => {
   const { unreadCount } = useChatContext();
+  const colorScheme = useColorScheme();
 
   if (unreadCount === 0) {
     return null;
@@ -23,6 +26,7 @@ export const ChatBadge: React.FC<ChatBadgeProps> = ({ size = 18 }) => {
         width: size, 
         height: size,
         borderRadius: size / 2,
+        backgroundColor: Colors[colorScheme ?? 'light'].tint,
         // Adjust position for larger numbers
         right: displayCount.length > 1 ? -6 : -4,
       }
@@ -35,11 +39,9 @@ export const ChatBadge: React.FC<ChatBadgeProps> = ({ size = 18 }) => {
 const styles = StyleSheet.create({
   badge: {
     position: 'absolute',
-    top: -4,
-    backgroundColor: '#CC0000', // Red badge
+    top: -5,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 10,
   },
   badgeText: {
     color: 'white',
