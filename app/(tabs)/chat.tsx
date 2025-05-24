@@ -351,10 +351,12 @@ export default function ChatScreen() {
               />
             }
             onContentSizeChange={() => {
-              flatListRef.current?.scrollToEnd({ animated: false });
+              if (!keyboardVisible) {
+                flatListRef.current?.scrollToEnd({ animated: true });
+              }
             }}
             onLayout={() => {
-              flatListRef.current?.scrollToEnd({ animated: false });
+              flatListRef.current?.scrollToEnd({ animated: true });
             }}
           />
         )}
