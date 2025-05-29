@@ -15,23 +15,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const liveMatches = [
   {
     id: '1',
-    homeTeam: 'Windhoek Warriors',
-    awayTeam: 'Swakopmund Strikers',
+    homeTeam: 'Wanderers',
+    awayTeam: 'WOBSC',
     homeScore: 3,
     awayScore: 2,
     period: '3rd Quarter',
     time: '5:23',
-    location: 'Windhoek Stadium',
+    location: 'Wanderers Sports Ground',
   },
   {
     id: '2',
-    homeTeam: 'Walvis Bay Wolves',
-    awayTeam: 'Otjiwarongo Owls',
+    homeTeam: 'NUST',
+    awayTeam: 'West Coast Wolves',
     homeScore: 1,
     awayScore: 1,
     period: '2nd Quarter',
     time: '8:45',
-    location: 'Walvis Bay Sports Ground',
+    location: 'Windhoek High School Stadium',
   },
 ];
 
@@ -39,27 +39,27 @@ const liveMatches = [
 const upcomingMatches = [
   {
     id: '3',
-    homeTeam: 'Windhoek Warriors',
-    awayTeam: 'Walvis Bay Wolves',
+    homeTeam: 'Masters Ladies',
+    awayTeam: 'SoEHC',
     date: '2025-05-15',
     time: '15:00',
-    location: 'Windhoek Stadium',
+    location: 'Windhoek High School Stadium',
   },
   {
     id: '4',
-    homeTeam: 'Swakopmund Strikers',
-    awayTeam: 'Otjiwarongo Owls',
+    homeTeam: 'Coastal Raiders',
+    awayTeam: 'DTS',
     date: '2025-05-16',
     time: '14:30',
-    location: 'Swakopmund Sports Complex',
+    location: 'MTC DOME',
   },
   {
     id: '5',
-    homeTeam: 'Keetmanshoop Kings',
-    awayTeam: 'Rundu Rangers',
+    homeTeam: 'Saints',
+    awayTeam: 'NUST',
     date: '2025-05-18',
     time: '16:00',
-    location: 'Keetmanshoop Stadium',
+    location: 'WAP astro',
   },
 ];
 
@@ -68,22 +68,22 @@ const matchHighlights = [
   {
     id: '1',
     title: 'National Championship Finals',
-    description: 'Windhoek Warriors defeat Swakopmund Strikers in an exciting final match',
-    thumbnail: 'https://images.unsplash.com/photo-1580748141549-71748dbe0bdc?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60',
+    description: 'Saints defeat Coastal Raiders in an exciting final match',
+    thumbnail: 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fscarletknights.com%2Fsports%2Ffield-hockey%2Froster%2Fdevon-freshnock%2F1080&psig=AOvVaw1lZMF_7I9TOVUSVm62Xa3v&ust=1748603622823000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCMjL6fnIyI0DFQAAAAAdAAAAABAb',
     date: '2025-04-30',
   },
   {
     id: '2',
     title: 'Youth Tournament Highlights',
     description: 'Young talents showcase their skills in the annual youth tournament',
-    thumbnail: 'https://images.unsplash.com/photo-1607457561901-e6ec3a6d16cf?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60',
+    thumbnail: 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.instagram.com%2Fnamibiahockeyunion%2F&psig=AOvVaw057WxfdHb1ZMXeDW3gN6-O&ust=1748604615514000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCIjo9dTLyI0DFQAAAAAdAAAAABAV',
     date: '2025-04-25',
   },
   {
     id: '3',
     title: 'Coastal Cup Semifinals',
-    description: 'Walvis Bay Wolves secure their place in the finals with a last-minute goal',
-    thumbnail: 'https://images.unsplash.com/photo-1519766304817-4f37bda74b38?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=60',
+    description: 'West Coast Wolves secure their place in the finals with a last-minute goal',
+    thumbnail: 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.instagram.com%2Fp%2FC-ZPHKSvXrs%2F&psig=AOvVaw2JE7Wg89Hyf9ZdZGI4MNgR&ust=1748605139386000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCLi42_zLyI0DFQAAAAAdAAAAABAL',
     date: '2025-04-20',
   },
 ];
@@ -93,13 +93,13 @@ const notifications = [
   {
     id: '1',
     title: 'Match Starting Soon',
-    message: 'Windhoek Warriors vs Swakopmund Strikers starts in 30 minutes',
+    message: 'Saints vs NUST starts in 30 minutes',
     time: '30 min ago',
   },
   {
     id: '2',
     title: 'Goal Alert!',
-    message: 'David Muller scores for Windhoek Warriors!',
+    message: 'David Muller scores for Saints!',
     time: '45 min ago',
   },
   {
